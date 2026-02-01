@@ -2,31 +2,84 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>FocusModulator Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusModulator Tech</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <canvas id="visualizer"></canvas>
+    
     <div class="container">
-        <h1>FocusModulator</h1>
-        <p>Bassi modulati + Melodia Lofi + Ambiente</p>
+        <h1>FocusModulator Tech</h1>
+        <p>Bassi modulati + Linea bassistica tech + Ambiente</p>
         
         <div class="controls">
+            <!-- SEZIONE BASSI MELODICI TECH -->
+            <div class="section-title">🔊 Bassline Tech</div>
+            
             <div class="slider-group">
-                <label>Ambiente:
+                <label class="checkbox-label">
+                    <input type="checkbox" id="melodicBassEnabled" checked>
+                    <span>Abilita Bassline</span>
+                </label>
+            </div>
+            
+            <div class="slider-group">
+                <label>Sequenza:
+                    <select id="melodicBassSeq">
+                        <option value="techno" selected>Techno</option>
+                        <option value="progressive">Progressive</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="hypnotic">Hypnotic</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label>BPM Bassline: <span id="melodicBassBPMVal" class="value-display">120</span>
+                <input type="range" id="melodicBassBPM" min="90" max="150" value="120" step="1"></label>
+            </div>
+
+            <div class="slider-group">
+                <label>Volume Bassline: <span id="melodicBassVolVal" class="value-display">70%</span>
+                <input type="range" id="melodicBassVol" min="0" max="1" value="0.7" step="0.01"></label>
+            </div>
+
+            <!-- SEZIONE BASSI MODULATI -->
+            <div class="section-title">🎵 Bassi Modulati</div>
+
+            <div class="slider-group">
+                <label>Freq. Modulazione: <span id="bassModFreqVal" class="value-display">15 Hz</span>
+                <input type="range" id="bassModFreq" min="8" max="30" value="15" step="1"></label>
+            </div>
+
+            <!-- SEZIONE AMBIENTE -->
+            <div class="section-title">🌧️ Ambiente</div>
+            
+            <div class="slider-group">
+                <label>Tipo Ambiente:
                     <select id="ambientType">
                         <option value="none">Nessuno</option>
-                        <option value="rain">Pioggia nel bosco</option>
-                        <option value="car">In Macchina (Muffled)</option>
+                        <option value="rain">Pioggia</option>
+                        <option value="car">In Macchina</option>
                         <option value="storm">Temporale</option>
                     </select>
                 </label>
+            </div>
+
+            <div class="slider-group">
                 <label>Vol. Ambiente: <span id="ambVolVal" class="value-display">30%</span>
                 <input type="range" id="ambientVolume" min="0" max="1" value="0.3" step="0.01"></label>
             </div>
 
+            <!-- SEZIONE MELODIA -->
+            <div class="section-title">🎹 Melodia Lofi</div>
+            
             <div class="slider-group">
-                <label>Modulazione Bassi: <span id="bassModFreqVal" class="value-display">15 Hz</span>
-                <input type="range" id="bassModFreq" min="8" max="30" value="15" step="1"></label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="melodyEnabled" checked>
+                    <span>Abilita Melodia</span>
+                </label>
             </div>
 
             <div class="slider-group">
@@ -34,6 +87,9 @@
                 <input type="range" id="melodyBPM" min="30" max="100" value="60" step="1"></label>
             </div>
 
+            <!-- MASTER -->
+            <div class="section-title">🎚️ Master</div>
+            
             <div class="slider-group">
                 <label>Master Volume: <span id="masterVolVal" class="value-display">70%</span>
                 <input type="range" id="masterVolume" min="0" max="1" value="0.7" step="0.01"></label>
@@ -42,6 +98,7 @@
             <button id="playBtn">Avvia Sessione</button>
         </div>
     </div>
+    <script src="visualizer.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

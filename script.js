@@ -3,10 +3,24 @@ let isPlaying = false;
 
 // Nodi Audio
 let masterGain, bassOsc, bassLfo, bassGain, melodyOsc, melodyGain, melodyFilter, ambientNoise, ambientFilter, ambientGain;
-let melodyInterval;
+let melodicBassOsc, melodicBassGain, melodicBassFilter;
+let melodyInterval, melodicBassInterval;
 
 // Configurazione Note Pentatoniche (Fa# Minore)
 const scale = [54, 57, 59, 61, 64, 66]; 
+
+// Note per bassi melodici (due ottave sotto per suono più profondo)
+const bassScale = [30, 33, 35, 37, 40, 42]; // Due ottave sotto
+
+// Sequenze melodiche per bassi tech
+const bassSequences = {
+    techno: [0, 2, 0, 4, 0, 2, 0, 3],
+    progressive: [0, 0, 2, 2, 4, 4, 2, 0],
+    minimal: [0, 4, 0, 4, 2, 4, 2, 0],
+    hypnotic: [0, 2, 4, 2, 0, 2, 4, 5]
+};
+
+let currentBassStep = 0;
 
 async function initAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -33,9 +47,9 @@ async function initAudio() {
     ambientNoise.connect(ambientFilter);
     ambientFilter.connect(ambientGain);
     ambientGain.connect(masterGain);
-    updateAmbientType(); // Imposta i filtri iniziali
+    updateAmbientType();
 
-    // --- BASSI MODULATI ---
+    // --- BASSI MODULATI (ORIGINALE) ---
     bassOsc = audioCtx.createOscillator();
     bassOsc.frequency.value = 60; 
     bassGain = audioCtx.createGain();
@@ -49,6 +63,22 @@ async function initAudio() {
     lfoDepth.connect(bassGain.gain);
     bassOsc.connect(bassGain);
     bassGain.connect(masterGain);
+
+    // --- BASSI MELODICI TECH ---
+    melodicBassOsc = audioCtx.createOscillator();
+    melodicBassOsc.type = 'sawtooth'; // Suono più aggressivo per tech
+    
+    melodicBassFilter = audioCtx.createBiquadFilter();
+    melodicBassFilter.type = 'lowpass';
+    melodicBassFilter.frequency.value = 300; // cutoff più basso per bassi più profondi
+    melodicBassFilter.Q.value = 0.8; // meno risonanza, suono più secco
+    
+    melodicBassGain = audioCtx.createGain();
+    melodicBassGain.gain.value = 0;
+
+    melodicBassOsc.connect(melodicBassFilter);
+    melodicBassFilter.connect(melodicBassGain);
+    melodicBassGain.connect(masterGain);
 
     // --- MELODIA ---
     melodyOsc = audioCtx.createOscillator();
@@ -66,8 +96,44 @@ async function initAudio() {
     ambientNoise.start();
     bassOsc.start();
     bassLfo.start();
+    melodicBassOsc.start();
     melodyOsc.start();
     startSequencer();
+    startMelodicBass();
+}
+
+function startMelodicBass() {
+    if (melodicBassInterval) clearInterval(melodicBassInterval);
+    
+    const enabled = document.getElementById('melodicBassEnabled').checked;
+    if (!enabled) {
+        melodicBassGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+        return;
+    }
+    
+    const bpm = document.getElementById('melodicBassBPM').value;
+    const ms = (60 / bpm) * 1000;
+    const sequence = bassSequences[document.getElementById('melodicBassSeq').value];
+    
+    melodicBassInterval = setInterval(() => {
+        const now = audioCtx.currentTime;
+        const noteIndex = sequence[currentBassStep % sequence.length];
+        const midiNote = bassScale[noteIndex];
+        const freq = 440 * Math.pow(2, (midiNote - 69) / 12);
+        const volume = parseFloat(document.getElementById('melodicBassVol').value);
+        
+        melodicBassOsc.frequency.setTargetAtTime(freq, now, 0.01);
+        
+        melodicBassGain.gain.cancelScheduledValues(now);
+        melodicBassGain.gain.setValueAtTime(0, now);
+        melodicBassGain.gain.linearRampToValueAtTime(volume, now + 0.01); // attack molto rapido
+        melodicBassGain.gain.exponentialRampToValueAtTime(0.001, now + (ms/1000) * 0.25); // decay più secco
+        
+        // Modulazione filtro per effetto dinamico
+        melodicBassFilter.frequency.setTargetAtTime(400 + Math.random() * 400, now, 0.05);
+        
+        currentBassStep++;
+    }, ms);
 }
 
 function updateAmbientType() {
@@ -83,13 +149,12 @@ function updateAmbientType() {
             break;
         case 'car':
             ambientFilter.type = 'lowpass';
-            ambientFilter.frequency.setTargetAtTime(150, now, 0.5); // Suono ovattato
+            ambientFilter.frequency.setTargetAtTime(150, now, 0.5);
             ambientGain.gain.setTargetAtTime(document.getElementById('ambientVolume').value * 1.5, now, 0.5);
             break;
         case 'storm':
             ambientFilter.type = 'lowpass';
             ambientFilter.frequency.setTargetAtTime(400, now, 0.5);
-            // Simula tuoni casuali
             setInterval(() => {
                 if(document.getElementById('ambientType').value === 'storm' && isPlaying) {
                     ambientGain.gain.exponentialRampToValueAtTime(1, audioCtx.currentTime + 0.1);
@@ -108,6 +173,9 @@ function startSequencer() {
     const ms = (60 / bpm) * 1000;
 
     melodyInterval = setInterval(() => {
+        // Se la melodia è disattivata, non schedulare note
+        if (!document.getElementById('melodyEnabled') || !document.getElementById('melodyEnabled').checked) return;
+
         if (Math.random() > 0.4) {
             const note = scale[Math.floor(Math.random() * scale.length)];
             const freq = 440 * Math.pow(2, (note - 69) / 12);
@@ -129,20 +197,59 @@ document.getElementById('playBtn').addEventListener('click', function() {
         this.classList.add('playing');
         isPlaying = true;
     } else {
-        location.reload(); // Semplice reset
+        location.reload();
     }
 });
 
 document.getElementById('ambientType').addEventListener('change', updateAmbientType);
+
 document.getElementById('ambientVolume').addEventListener('input', (e) => {
     document.getElementById('ambVolVal').textContent = Math.round(e.target.value * 100) + "%";
     if(ambientGain) ambientGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
 });
+
 document.getElementById('bassModFreq').addEventListener('input', (e) => {
     document.getElementById('bassModFreqVal').textContent = e.target.value + " Hz";
     if(bassLfo) bassLfo.frequency.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
 });
+
+document.getElementById('melodicBassEnabled').addEventListener('change', () => {
+    if(isPlaying) startMelodicBass();
+});
+
+document.getElementById('melodicBassSeq').addEventListener('change', () => {
+    currentBassStep = 0;
+    if(isPlaying) startMelodicBass();
+});
+
+document.getElementById('melodicBassBPM').addEventListener('input', (e) => {
+    document.getElementById('melodicBassBPMVal').textContent = e.target.value;
+    if(isPlaying) startMelodicBass();
+});
+
+document.getElementById('melodicBassVol').addEventListener('input', (e) => {
+    document.getElementById('melodicBassVolVal').textContent = Math.round(e.target.value * 100) + "%";
+});
+
 document.getElementById('masterVolume').addEventListener('input', (e) => {
     document.getElementById('masterVolVal').textContent = Math.round(e.target.value * 100) + "%";
     if(masterGain) masterGain.gain.setTargetAtTime(e.target.value, audioCtx.currentTime, 0.1);
+});
+
+document.getElementById('melodyBPM').addEventListener('input', (e) => {
+    document.getElementById('melodyBPMVal').textContent = e.target.value;
+    if(isPlaying) startSequencer();
+});
+
+// Toggle per abilitare/disabilitare la melodia (mute)
+document.getElementById('melodyEnabled').addEventListener('change', () => {
+    if(!isPlaying || !melodyGain) return;
+    const now = audioCtx.currentTime;
+    if (document.getElementById('melodyEnabled').checked) {
+        // lasciamo che il sequencer suoni la melodia al prossimo passo
+    } else {
+        // attenua subito la melodia
+        melodyGain.gain.cancelScheduledValues(now);
+        melodyGain.gain.setTargetAtTime(0, now, 0.01);
+    }
 });

@@ -1,48 +1,149 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    margin: 0;
-    background: #0f172a;
+    background: #0a0e1a;
     color: #f8fafc;
+    position: relative;
+    overflow: hidden;
+}
+
+#visualizer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0.4;
 }
 
 .container {
-    background: #1e293b;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
     padding: 30px;
     border-radius: 24px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     width: 100%;
-    max-width: 450px;
-    border: 1px solid #334155;
+    max-width: 500px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    position: relative;
+    z-index: 1;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
-h1 { margin-top: 0; color: #38bdf8; font-size: 1.8rem; }
-p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 30px; }
+.container::-webkit-scrollbar {
+    width: 8px;
+}
 
-.controls { display: flex; flex-direction: column; gap: 20px; }
+.container::-webkit-scrollbar-track {
+    background: rgba(51, 65, 85, 0.3);
+    border-radius: 10px;
+}
 
-.slider-group { display: flex; flex-direction: column; gap: 8px; }
+.container::-webkit-scrollbar-thumb {
+    background: rgba(56, 189, 248, 0.5);
+    border-radius: 10px;
+}
 
-label { font-size: 0.8rem; font-weight: 600; color: #cbd5e1; }
+h1 { 
+    margin-top: 0; 
+    color: #38bdf8; 
+    font-size: 1.8rem; 
+    text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+}
+
+p { 
+    color: #94a3b8; 
+    font-size: 0.9rem; 
+    margin-bottom: 30px; 
+}
+
+.controls { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+}
+
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #38bdf8;
+    margin-top: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid rgba(56, 189, 248, 0.3);
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.slider-group { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+}
+
+label { 
+    font-size: 0.8rem; 
+    font-weight: 600; 
+    color: #cbd5e1; 
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: #38bdf8;
+}
+
+.checkbox-label span {
+    font-size: 0.9rem;
+    color: #cbd5e1;
+}
 
 select {
-    background: #334155;
+    background: rgba(51, 65, 85, 0.8);
     color: white;
-    border: none;
+    border: 1px solid rgba(56, 189, 248, 0.3);
     padding: 8px;
     border-radius: 8px;
     margin-top: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-input[type=range] { width: 100%; accent-color: #38bdf8; }
+select:hover {
+    border-color: #38bdf8;
+}
 
-.value-display { float: right; color: #38bdf8; }
+input[type=range] { 
+    width: 100%; 
+    accent-color: #38bdf8; 
+    cursor: pointer;
+}
+
+.value-display { 
+    float: right; 
+    color: #38bdf8; 
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
 
 button {
-    background: #38bdf8;
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
     color: #0f172a;
     border: none;
     padding: 16px;
@@ -50,8 +151,39 @@ button {
     font-weight: bold;
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
-button:hover { background: #7dd3fc; transform: translateY(-2px); }
-button.playing { background: #f43f5e; color: white; }
+button:hover { 
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 25px rgba(56, 189, 248, 0.6);
+}
+
+button.playing { 
+    background: linear-gradient(135deg, #f43f5e 0%, #dc2626 100%); 
+    color: white; 
+    box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+        margin: 10px;
+        max-width: calc(100% - 20px);
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+}
