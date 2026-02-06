@@ -4,7 +4,7 @@ let isPlaying = false;
 // Nodi Audio
 let masterGain, bassOsc, bassLfo, bassGain, melodyOsc, melodyGain, melodyFilter, ambientNoise, ambientFilter, ambientGain;
 let melodicBassOsc, melodicBassGain, melodicBassFilter;
-let melodyInterval, melodicBassInterval;
+let melodyInterval, melodicBassInterval, baseFreqModInterval;
 
 // Configurazione Note Pentatoniche (Fa# Minore)
 const scale = [54, 57, 59, 61, 64, 66]; 
@@ -21,6 +21,11 @@ const bassSequences = {
 };
 
 let currentBassStep = 0;
+let baseFreqModState = {
+    currentVolume: 0.5,
+    currentPitch: 60,
+    originalPitch: 60
+};
 
 async function initAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -51,8 +56,12 @@ async function initAudio() {
 
     // --- BASSI MODULATI (ORIGINALE) ---
     bassOsc = audioCtx.createOscillator();
-    bassOsc.frequency.value = 60; 
+    bassOsc.frequency.value = 60;
+    baseFreqModState.originalPitch = 60;
+    baseFreqModState.currentPitch = 60;
     bassGain = audioCtx.createGain();
+    baseFreqModState.currentVolume = 0.5;
+    bassGain.gain.value = baseFreqModState.currentVolume;
     
     bassLfo = audioCtx.createOscillator();
     bassLfo.frequency.value = document.getElementById('bassModFreq').value;
@@ -100,6 +109,7 @@ async function initAudio() {
     melodyOsc.start();
     startSequencer();
     startMelodicBass();
+    startBaseFreqModulation();
 }
 
 function startMelodicBass() {
@@ -134,6 +144,63 @@ function startMelodicBass() {
         
         currentBassStep++;
     }, ms);
+}
+
+function startBaseFreqModulation() {
+    if (baseFreqModInterval) clearInterval(baseFreqModInterval);
+    
+    const enabled = document.getElementById('baseFreqModEnabled').checked;
+    if (!enabled) return;
+    
+    const modType = document.getElementById('modType').value;
+    const modMode = document.getElementById('modMode').value;
+    const modInterval = parseInt(document.getElementById('modInterval').value);
+    const modVolRange = parseFloat(document.getElementById('modVolRange').value);
+    const modPitchRange = parseInt(document.getElementById('modPitchRange').value);
+    
+    const applyModulation = () => {
+        const now = audioCtx.currentTime;
+        let nextVolume = baseFreqModState.currentVolume;
+        let nextPitch = baseFreqModState.currentPitch;
+        
+        // Calcola i range di volume (centro ± range)
+        const volCenter = 0.55;
+        const volMin = Math.max(0.1, volCenter - modVolRange * 0.5);
+        const volMax = Math.min(1, volCenter + modVolRange * 0.5);
+        
+        if (modType === 'volume' || modType === 'both') {
+            nextVolume = modMode === 'random' 
+                ? Math.random() * (volMax - volMin) + volMin
+                : (baseFreqModState.currentVolume === volMin ? volMax : volMin);
+        }
+        
+        if (modType === 'pitch' || modType === 'both') {
+            if (modMode === 'random') {
+                nextPitch = baseFreqModState.originalPitch + (Math.random() * modPitchRange * 2 - modPitchRange);
+            } else {
+                // Alterna tra pitch originale e pitch modificato
+                nextPitch = baseFreqModState.currentPitch === baseFreqModState.originalPitch 
+                    ? baseFreqModState.originalPitch + modPitchRange
+                    : baseFreqModState.originalPitch;
+            }
+        }
+        
+        baseFreqModState.currentVolume = nextVolume;
+        baseFreqModState.currentPitch = nextPitch;
+        
+        // Applica le modulazioni con transizione smooth
+        const transitionTime = 0.5;
+        if (modType === 'volume' || modType === 'both') {
+            bassGain.gain.linearRampToValueAtTime(nextVolume, now + transitionTime);
+        }
+        
+        if (modType === 'pitch' || modType === 'both') {
+            const freq = 440 * Math.pow(2, (nextPitch - 69) / 12);
+            bassOsc.frequency.linearRampToValueAtTime(freq, now + transitionTime);
+        }
+    };
+    
+    baseFreqModInterval = setInterval(applyModulation, modInterval * 1000);
 }
 
 function updateAmbientType() {
@@ -252,4 +319,34 @@ document.getElementById('melodyEnabled').addEventListener('change', () => {
         melodyGain.gain.cancelScheduledValues(now);
         melodyGain.gain.setTargetAtTime(0, now, 0.01);
     }
+});
+
+// Event Listener per Modulazione Frequenza Base
+document.getElementById('baseFreqModEnabled').addEventListener('change', () => {
+    if (isPlaying) startBaseFreqModulation();
+});
+
+document.getElementById('modType').addEventListener('change', () => {
+    if (isPlaying && document.getElementById('baseFreqModEnabled').checked) startBaseFreqModulation();
+});
+
+document.getElementById('modMode').addEventListener('change', () => {
+    if (isPlaying && document.getElementById('baseFreqModEnabled').checked) startBaseFreqModulation();
+});
+
+document.getElementById('modInterval').addEventListener('input', (e) => {
+    document.getElementById('modIntervalVal').textContent = e.target.value + ' sec';
+    if (isPlaying && document.getElementById('baseFreqModEnabled').checked) startBaseFreqModulation();
+});
+
+document.getElementById('modVolRange').addEventListener('input', (e) => {
+    const center = 0.55;
+    const range = parseFloat(e.target.value);
+    const min = Math.max(0.1, center - range * 0.5);
+    const max = Math.min(1, center + range * 0.5);
+    document.getElementById('modVolRangeVal').textContent = min.toFixed(1) + ' - ' + max.toFixed(1);
+});
+
+document.getElementById('modPitchRange').addEventListener('input', (e) => {
+    document.getElementById('modPitchRangeVal').textContent = '±' + e.target.value;
 });

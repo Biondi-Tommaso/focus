@@ -50,6 +50,49 @@
                 <input type="range" id="bassModFreq" min="2" max="30" value="15" step="1"></label>
             </div>
 
+            <div class="section-title">Modulazione Frequenza Base</div>
+
+            <div class="slider-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="baseFreqModEnabled">
+                    <span>Abilita Modulazione Frequenza Base</span>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label>Tipo Modulazione:
+                    <select id="modType">
+                        <option value="volume">Volume</option>
+                        <option value="pitch">Nota</option>
+                        <option value="both">Entrambi</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label>Modalità Variazione:
+                    <select id="modMode">
+                        <option value="fixed">Intervallo Fisso</option>
+                        <option value="random">Casuale</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="slider-group">
+                <label>Intervallo Modulazione: <span id="modIntervalVal" class="value-display">5 sec</span>
+                <input type="range" id="modInterval" min="1" max="30" value="5" step="1"></label>
+            </div>
+
+            <div class="slider-group">
+                <label>Range Volume: <span id="modVolRangeVal" class="value-display">0.3 - 0.8</span>
+                <input type="range" id="modVolRange" min="0" max="1" value="0.55" step="0.05"></label>
+            </div>
+
+            <div class="slider-group">
+                <label>Range Nota (semitoni): <span id="modPitchRangeVal" class="value-display">±5</span>
+                <input type="range" id="modPitchRange" min="0" max="12" value="5" step="1"></label>
+            </div>
+
             <div class="section-title">Ambiente</div>
             
             <div class="slider-group">

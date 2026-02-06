@@ -79,6 +79,10 @@ p {
     text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
 }
 
+.section-title:nth-of-type(3) {
+    margin-top: 20px;
+}
+
 .slider-group {
     display: flex;
     flex-direction: column;
