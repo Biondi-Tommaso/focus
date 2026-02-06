@@ -23,8 +23,8 @@ const bassSequences = {
 let currentBassStep = 0;
 let baseFreqModState = {
     currentVolume: 0.5,
-    currentPitch: 60,
-    originalPitch: 60
+    currentFreq: 60,
+    originalFreq: 60
 };
 
 async function initAudio() {
@@ -57,8 +57,8 @@ async function initAudio() {
     // --- BASSI MODULATI (ORIGINALE) ---
     bassOsc = audioCtx.createOscillator();
     bassOsc.frequency.value = 60;
-    baseFreqModState.originalPitch = 60;
-    baseFreqModState.currentPitch = 60;
+    baseFreqModState.originalFreq = 60;
+    baseFreqModState.currentFreq = 60;
     bassGain = audioCtx.createGain();
     baseFreqModState.currentVolume = 0.5;
     bassGain.gain.value = baseFreqModState.currentVolume;
@@ -161,7 +161,7 @@ function startBaseFreqModulation() {
     const applyModulation = () => {
         const now = audioCtx.currentTime;
         let nextVolume = baseFreqModState.currentVolume;
-        let nextPitch = baseFreqModState.currentPitch;
+        let nextFreq = baseFreqModState.currentFreq;
         
         // Calcola i range di volume (centro ± range)
         const volCenter = 0.55;
@@ -175,28 +175,36 @@ function startBaseFreqModulation() {
         }
         
         if (modType === 'pitch' || modType === 'both') {
+            // Calcola variazioni relative usando semitoni moltiplicativi
+            // Variazione di frequenza: freq_new = freq_original * 2^(semitoni/12)
             if (modMode === 'random') {
-                nextPitch = baseFreqModState.originalPitch + (Math.random() * modPitchRange * 2 - modPitchRange);
+                const randomSemitones = (Math.random() * modPitchRange * 2) - modPitchRange;
+                nextFreq = baseFreqModState.originalFreq * Math.pow(2, randomSemitones / 12);
             } else {
-                // Alterna tra pitch originale e pitch modificato
-                nextPitch = baseFreqModState.currentPitch === baseFreqModState.originalPitch 
-                    ? baseFreqModState.originalPitch + modPitchRange
-                    : baseFreqModState.originalPitch;
+                // Alterna tra frequenza originale e frequenza modificata
+                const pitchVariation = baseFreqModState.originalFreq * Math.pow(2, modPitchRange / 12);
+                nextFreq = baseFreqModState.currentFreq === baseFreqModState.originalFreq 
+                    ? pitchVariation
+                    : baseFreqModState.originalFreq;
             }
         }
         
         baseFreqModState.currentVolume = nextVolume;
-        baseFreqModState.currentPitch = nextPitch;
+        baseFreqModState.currentFreq = nextFreq;
         
-        // Applica le modulazioni con transizione smooth
-        const transitionTime = 0.5;
+        // Applica le modulazioni con transizione molto smooth
+        const transitionTime = (modInterval * 1000 - 500) / 1000; // Quasi tutto l'intervallo per transizione fluida
+        
         if (modType === 'volume' || modType === 'both') {
-            bassGain.gain.linearRampToValueAtTime(nextVolume, now + transitionTime);
+            bassGain.gain.cancelScheduledValues(now);
+            bassGain.gain.setValueAtTime(baseFreqModState.currentVolume, now);
+            bassGain.gain.exponentialRampToValueAtTime(nextVolume, now + transitionTime);
         }
         
         if (modType === 'pitch' || modType === 'both') {
-            const freq = 440 * Math.pow(2, (nextPitch - 69) / 12);
-            bassOsc.frequency.linearRampToValueAtTime(freq, now + transitionTime);
+            bassOsc.frequency.cancelScheduledValues(now);
+            bassOsc.frequency.setValueAtTime(baseFreqModState.currentFreq, now);
+            bassOsc.frequency.exponentialRampToValueAtTime(nextFreq, now + transitionTime);
         }
     };
     
